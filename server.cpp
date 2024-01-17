@@ -1,12 +1,12 @@
-#include "socket.h"
+#include "TCPserver.h"
+#include <iostream>
 
-int main(){
-    Server *serv=new Server();
-    serv->Accept();
-    while (true) {
-        serv->Recv();
-        serv->Send();
-    }
-    serv->Close();
-    delete (serv);
+#define SERV_PORT 6666
+
+int main() {
+    TCPserver *server = new TCPserver(SERV_PORT);
+    server->run();
+    server->shutdown();
+    delete (server);
+    return 0;
 }
