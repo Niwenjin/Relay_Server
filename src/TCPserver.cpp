@@ -11,9 +11,9 @@ using std::cerr;
 using std::cout;
 using std::endl;
 
-TCPserver::TCPserver(int port) {
+TCPserver::TCPserver(int port, int n) {
     listenfd = init_socket(port);
-    reactor = new Reactor(listenfd);
+    reactor = new Reactor(listenfd, n);
 }
 
 TCPserver::~TCPserver() {

@@ -3,8 +3,17 @@
 
 #define SERV_PORT 6666
 
-int main() {
-    TCPserver *server = new TCPserver(SERV_PORT);
+using std::cerr;
+using std::endl;
+using std::stoi;
+
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        cerr << "please input thread number." << endl;
+        return -1;
+    }
+    int n = stoi(argv[1]);
+    TCPserver *server = new TCPserver(SERV_PORT, n);
     server->run();
     server->shutdown();
     delete (server);

@@ -4,7 +4,7 @@
 
 class TCPserver {
   public:
-    TCPserver(int port);
+    TCPserver(int port, int thread_num);
     ~TCPserver();
     void run();
     void shutdown();

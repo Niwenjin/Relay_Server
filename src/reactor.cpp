@@ -1,5 +1,5 @@
 #include "reactor.h"
-#include "sock_item.h"
+#include "threadpool.h"
 #include <arpa/inet.h>
 #include <cstddef>
 #include <cstdio>
@@ -11,18 +11,24 @@
 #include <unistd.h>
 
 #define MAX_EPOLL_SIZE 65536
+#define ACCEPT 0
+#define ECHO 1
 
 using std::cerr;
-using std::cout;
+// using std::cout;
 using std::endl;
 
-Reactor::Reactor(int fd) : listenfd(fd) { epfd = init_reactor(); }
+Reactor::Reactor(int fd, int n) : listenfd(fd) {
+    epfd = init_reactor();
+    pool = new ThreadPool(n);
+}
 
 Reactor::~Reactor() {
     if (epfd != -1) {
         close(epfd);
         epfd = -1;
     }
+    delete (pool);
 }
 
 int Reactor::init_reactor() {
@@ -60,17 +66,12 @@ int Reactor::reactor_loop() {
                 // cout << "rfd: " << rfd << endl;
                 if (rfd == listenfd) {
                     // Accept事件
-                    int connfd = event_accept(listenfd);
-                    if (connfd == -1) {
-                        cerr << "connect error." << endl;
-                        continue;
-                    }
-                    set_event(connfd, EPOLLIN | EPOLLOUT | EPOLLET);
-                    cout << "connect fd: " << connfd << endl;
+                    // cout<< "accept event"<<endl;
+                    pool->add_task(epfd, ACCEPT, rfd);
                 } else {
                     // Read事件
-                    if (event_read(rfd) == -1)
-                        cerr << "read fd: " << rfd << " error." << endl;
+                    // cout<< "read event"<<endl;
+                    pool->add_task(epfd, ECHO, rfd);
                 }
             }
             if (events[i].events & EPOLLOUT) {
@@ -89,13 +90,10 @@ int Reactor::set_event(int fd, int event) {
     epoll_event newevent;
     newevent.events = event;
     newevent.data.fd = fd;
-    sock_items[fd] = new Sock_item();
     return epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &newevent);
 }
 
 int Reactor::del_event(int fd) {
-    delete (sock_items[fd]);
-    sock_items.erase(fd);
     return epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL);
 }
 
@@ -119,26 +117,8 @@ int Reactor::event_accept(int fd) {
 }
 
 int Reactor::event_read(int fd) {
-    Sock_item *sock_item = sock_items[fd];
-    if (sock_item == nullptr)
-        return -1;
-    char *buf = sock_item->r_buf;
-    ssize_t n = recv(fd, buf, BUFFER_SIZE, 0);
-    if (n > 0) {
-        buf[n] = '\0';
-        cout << "recvform fd: " << fd << endl;
-    } else if (n == 0) {
-        // 连接断开
-        del_event(fd);
-        close(fd);
-        return 0;
-    } else {
-        // 处理接收错误
-    }
-    sock_item->r_len = n;
-    send(fd, buf, n, 0);
-    // cout << "send: " << buf << endl;
-    return n;
+    pool->add_task(epfd, ECHO, fd);
+    return 0;
 }
 
 int Reactor::event_write(int fd) { return 0; }

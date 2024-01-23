@@ -17,7 +17,8 @@ include_directories(include)
 set(SOURCE_FILES_TCPSERVER 
     src/TCPserver.cpp
     src/reactor.cpp
-    src/sock_item.cpp
+    src/threadpool.cpp
+    src/task.cpp
 )
 
 add_library(TCPserver STATIC ${SOURCE_FILES_TCPSERVER})
