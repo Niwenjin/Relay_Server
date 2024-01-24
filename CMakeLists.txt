@@ -27,8 +27,8 @@ add_executable(server server.cpp)
 
 target_link_libraries(server TCPserver)
 
-add_library(TCPclient STATIC src/TCPclient.cpp)
+# add_library(TCPclient STATIC src/TCPclient.cpp)
 
-add_executable(client client.cpp)
+# add_executable(client client.cpp)
 
-target_link_libraries(client TCPclient)
+# target_link_libraries(client TCPclient)
