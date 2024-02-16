@@ -1,12 +1,13 @@
 #ifndef TASK_H
 #define TASK_H
+#include "sock_item.h"
 #include <functional>
 
 using std::function;
 
 class Task {
   public:
-    Task(int epfd, int type, int fd, char *buf);
+    Task(int epfd, int type, int fd, Sock_item &sock_item);
     void run();
 
   private:

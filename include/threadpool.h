@@ -1,5 +1,6 @@
 #ifndef THREADPOOL_H
 #define THREADPOOL_H
+#include "sock_item.h"
 #include "task.h"
 #include <condition_variable>
 #include <functional>
@@ -22,7 +23,7 @@ using std::vector;
 
 class ThreadPool {
   public:
-    ThreadPool(int n);
+    ThreadPool(int n, vector<Sock_item> &sock_items);
     ~ThreadPool();
 
     void add_task(int epfd, int type, int fd);
@@ -38,7 +39,8 @@ class ThreadPool {
     void pool_stop();
     bool stopflag;
 
-    char buf[MAX_CONN_SIZE][BUFFER_SIZE];
+    // char buf[MAX_CONN_SIZE][BUFFER_SIZE];
+    vector<Sock_item> &sock_items;
 };
 
 #endif

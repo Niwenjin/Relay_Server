@@ -13,6 +13,7 @@
 #define MAX_EPOLL_SIZE 65536
 #define ACCEPT 0
 #define ECHO 1
+#define RELAY 2
 
 using std::cerr;
 // using std::cout;
@@ -20,7 +21,8 @@ using std::endl;
 
 Reactor::Reactor(int fd, int n) : listenfd(fd) {
     epfd = init_reactor();
-    pool = new ThreadPool(n);
+    init_buffer();
+    pool = new ThreadPool(n,sock_items);
 }
 
 Reactor::~Reactor() {
@@ -40,13 +42,21 @@ int Reactor::init_reactor() {
     return epfd;
 }
 
+void Reactor::init_buffer() {
+    for (int i = 0; i <= epfd; ++i) {
+        sock_items.emplace_back(i);
+    }
+}
+
 int Reactor::reactor_loop() {
     epoll_event events[MAX_EPOLL_SIZE];
     memset(events, 0, sizeof(events));
     // 添加listenfd到epoll的监听队列
     // cout << "listenfd: " << listenfd << endl;
-    set_event(listenfd, EPOLLIN | EPOLLET);
-
+    // 边缘触发
+    // set_event(listenfd, EPOLLIN | EPOLLET);
+    // 水平触发
+    set_event(listenfd, EPOLLIN);
     int nready = 0;
     while (1) {
         // cout << "epfd: " << epfd << endl;
@@ -68,10 +78,12 @@ int Reactor::reactor_loop() {
                     // Accept事件
                     // cout<< "accept event"<<endl;
                     pool->add_task(epfd, ACCEPT, rfd);
+                    sock_items.emplace_back(rfd);
                 } else {
                     // Read事件
                     // cout<< "read event"<<endl;
-                    pool->add_task(epfd, ECHO, rfd);
+                    // pool->add_task(epfd, ECHO, rfd);
+                    pool->add_task(epfd, RELAY, rfd);
                 }
             }
             if (events[i].events & EPOLLOUT) {

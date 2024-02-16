@@ -1,8 +1,10 @@
 #include "threadpool.h"
+#include "sock_item.h"
 
 using std::unique_lock;
 
-ThreadPool::ThreadPool(int n) : num(n), stopflag(false) {
+ThreadPool::ThreadPool(int n, vector<Sock_item> &sock_items)
+    : num(n), stopflag(false), sock_items(sock_items) {
     pool_run();
 }
 
@@ -43,6 +45,6 @@ void ThreadPool::pool_stop() {
 
 void ThreadPool::add_task(int epfd, int type, int fd) {
     unique_lock<mutex> lock(mutex_queue);
-    task_queue.emplace(Task(epfd, type, fd, buf[fd]));
+    task_queue.emplace(Task(epfd, type, fd, sock_items[fd]));
     cond.notify_one();
 }
