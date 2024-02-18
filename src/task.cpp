@@ -70,13 +70,15 @@ Task::Task(int epfd, int type, int fd, Sock_item &sock_item)
             ssize_t n = recv(fd, buf, BUFFER_SIZE, 0);
 
             if (n > 0) {
-                buf[n] = '\0';
                 msg = *(Message *)buf;
                 // 转发
-                send(msg.tofd, buf, n, 0);
-                cout << "relay form " << msg.fromfd << " to " << msg.tofd
-                     << endl
-                     << "msg: " << msg.data << endl;
+                if (send(msg.tofd, buf, n, 0) == -1) {
+                    epoll_ctl(epfd, EPOLL_CTL_DEL, msg.tofd, NULL);
+                    close(msg.tofd);
+                };
+                // cout << "relay form " << msg.fromfd << " to " << msg.tofd
+                //      << endl
+                //      << "msg: " << msg.data << endl;
             } else if (n == 0) {
                 // 连接断开
                 epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL);

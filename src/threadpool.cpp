@@ -39,7 +39,9 @@ void ThreadPool::pool_stop() {
     cond.notify_all();
 
     for (thread &thread : threads) {
-        thread.detach();
+        if (thread.joinable()) {
+            thread.join();
+        }
     }
 }
 
