@@ -18,7 +18,7 @@ class MainReactor {
     int epfd;
     int listenfd;
 
-    vector<std::thread> threads;
+    vector<thread> threads;
     vector<SubReactor> subreactors;
 
     int epoll_init();
