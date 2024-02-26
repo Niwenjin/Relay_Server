@@ -8,8 +8,6 @@
 
 #define MAX_EVENTS 10000
 
-using std::thread;
-
 MainReactor::MainReactor(int n) : thread_num(n), epfd(-1), listenfd(-1) {
     epfd = epoll_init();
 
@@ -108,6 +106,7 @@ void MainReactor::accept_loop() {
                     perror("accept");
                     exit(1);
                 }
+
                 dispatch(clientfd);
             }
         }

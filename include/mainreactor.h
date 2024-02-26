@@ -4,6 +4,9 @@
 #include <thread>
 #include <vector>
 
+using std::thread;
+using std::vector;
+
 class MainReactor {
   public:
     MainReactor(int n);
@@ -14,9 +17,9 @@ class MainReactor {
     int thread_num;
     int epfd;
     int listenfd;
-    
-    std::vector<std::thread> threads;
-    std::vector<SubReactor> subreactors;
+
+    vector<std::thread> threads;
+    vector<SubReactor> subreactors;
 
     int epoll_init();
     int thread_init();
