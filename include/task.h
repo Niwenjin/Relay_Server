@@ -3,17 +3,19 @@
 #include "sock_item.h"
 #include <functional>
 
-using std::function;
-
 class Task {
   public:
-    Task(int epfd, int type, int fd, Sock_item &sock_item);
-    void run();
+    Task(int epfd, int type, int fd, Sock_item &sock_item)
+        : epfd(epfd), fd(fd), buf(sock_item.buf) {
+          // 创建任务函数
+        }
+    ~Task() {}
+    void run() { func(epfd, fd, buf); };
 
   private:
     int epfd;
     int fd;
     char *buf;
-    function<void(int, int, char *)> func;
+    std::function<void(int, int, char *)> func;
 };
 #endif
