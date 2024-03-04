@@ -1,17 +1,15 @@
 #ifndef TCPSERVER_H
 #define TCPSERVER_H
-#include "reactor.h"
+#include "mainreactor.h"
 
-class TCPserver {
+class TcpServer {
   public:
-    TCPserver(int port, int thread_num);
-    ~TCPserver();
+    TcpServer(int n);
+    TcpServer();
+    ~TcpServer();
     void run();
-    void shutdown();
 
   private:
-    int listenfd;
-    int init_socket(int port);
-    Reactor *reactor;
+    MainReactor *mainreactor;
 };
 #endif

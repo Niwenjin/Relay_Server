@@ -15,10 +15,9 @@ include_directories(include)
 # link_directories(/app/json /app/lib)
 
 set(SOURCE_FILES_TCPSERVER 
+    src/mainreactor.cpp
+    src/subreactor.cpp
     src/TCPserver.cpp
-    src/reactor.cpp
-    src/threadpool.cpp
-    src/task.cpp
 )
 
 add_library(TCPserver STATIC ${SOURCE_FILES_TCPSERVER})

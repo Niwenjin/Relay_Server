@@ -7,42 +7,49 @@
 
 #define MAX_EVENTS 10000
 
-MainReactor::MainReactor(int n) : thread_num(n), epfd(-1), listenfd(-1) {
-    epfd = epoll_init();
-
+MainReactor::MainReactor(int n)
+    : thread_num(n), epfd(-1), listenfd(-1), fdflag(0) {
     listenfd = listensock_init();
+    epfd = epoll_init();
 
     epoll_add_listen();
 
     // 创建n个子线程
-    if (thread_init() == -1) {
-        perror("thread_init");
-        exit(1);
-    }
+    thread_init();
 }
 
 MainReactor::~MainReactor() {
     if (epfd != -1)
         close(epfd);
+    if (listenfd != -1)
+        close(listenfd);
     for (int i = 0; i < thread_num; i++)
         threads[i].join();
 }
 
-int MainReactor::thread_init() {
-    for (int i = 0; i < thread_num; i++) {
-        SubReactor subreactor;
-        subreactors.push_back(subreactor);
-        threads.push_back(thread(&SubReactor::run, &subreactors[i]));
+int MainReactor::epoll_init() {
+    int epfd = epoll_create1(0);
+    if (epfd == -1) {
+        perror("epoll_create");
+        exit(1);
     }
-    return 0;
+    return epfd;
+}
+
+void MainReactor::thread_init() {
+    for (int i = 0; i < thread_num; i++) {
+        subreactors.push_back(std::make_shared<SubReactor>());
+        threads.push_back(thread(thread_func, subreactors[i]));
+    }
+}
+
+void MainReactor::thread_func(shared_ptr<SubReactor> subreactor) {
+    subreactor->run();
 }
 
 int MainReactor::listensock_init() {
     // 服务器监听的端口号
     const int serverPort = 6666;
-
-    // 服务器监听的特定IP地址
-    const char *serverIP = "192.168.1.2";
 
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);
     if (listenfd == -1) {
@@ -54,13 +61,6 @@ int MainReactor::listensock_init() {
     addr.sin_family = AF_INET;
     addr.sin_port = htons(serverPort);
     addr.sin_addr.s_addr = INADDR_ANY;
-
-    // 将IP地址从字符串形式转换为二进制形式
-    if (inet_pton(AF_INET, serverIP, &addr.sin_addr) <= 0) {
-        perror("Invalid IP address");
-        close(listenfd);
-        exit(1);
-    }
 
     // bind
     if (bind(listenfd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
@@ -89,6 +89,7 @@ void MainReactor::epoll_add_listen() {
 void MainReactor::accept_loop() {
     while (1) {
         struct epoll_event events[10];
+        // std::cout << "main_epfd: " << epfd << std::endl;
         int nfds = epoll_wait(epfd, events, 10, -1);
         if (nfds == -1) {
             perror("epoll_wait");
@@ -106,15 +107,30 @@ void MainReactor::accept_loop() {
                     exit(1);
                 }
 
-                dispatch(clientfd);
+                if (add_fdpair(clientfd)) {
+                    dispatch();
+                    fdflag = 0;
+                }
             }
         }
     }
 }
 
-void MainReactor::dispatch(int fd) {
-    int i = fd % thread_num;
-    subreactors[i].add_event(fd);
+int MainReactor::add_fdpair(int fd) {
+    if (fdflag == 0) {
+        fdpair[0] = fd;
+        fdflag = 1;
+        return 0;
+    } else {
+        fdpair[1] = fd;
+        fdflag = 0;
+        return 1;
+    }
+}
+
+void MainReactor::dispatch() {
+    int i = fdpair[0] % thread_num;
+    subreactors[i]->add_relay_pair(fdpair[0], fdpair[1]);
 }
 
 void MainReactor::run() { accept_loop(); }
